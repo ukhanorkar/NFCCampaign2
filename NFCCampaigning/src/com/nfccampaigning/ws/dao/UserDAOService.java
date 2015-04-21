@@ -27,9 +27,11 @@ public class UserDAOService {
 	private ResultSet resultSet;
 	private Connection connection;
 	private final String INSERT_USER_INFO = "INSERT INTO user(device_id,contact_number,email_id,registration_number) VALUES(?,?,?,?);";
+	private final String GET_USER  = "select * from user where device_id = ?";
 	Logger logger = Logger.getLogger("VendorDAOService");
 	
 	@POST
+	@Path("/registerUser")
 	@Consumes("application/json")
 	public void registerUser(User user){
 		try {
@@ -44,5 +46,26 @@ public class UserDAOService {
 			logger.info(e.getMessage());
 			e.printStackTrace();
 		}
+	}
+	
+	@POST
+	@Path("/isUserRegistered")
+	@Consumes("application/json")
+	public boolean isUaerRegistered(User user){
+		try {
+			connection = DatabaseConnectionVendor.getConnection();
+			preparedStatement = connection.prepareStatement(GET_USER);
+			preparedStatement.setString(1, user.getDeviceId());
+			resultSet = preparedStatement.executeQuery();
+			if(resultSet.next()){
+				return true;
+			}
+		} catch (SQLException e) {
+			logger.info(e.getMessage());
+			e.printStackTrace();
+			return false;
+		}
+		
+		return false;
 	}
 }
