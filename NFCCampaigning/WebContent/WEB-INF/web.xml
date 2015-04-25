@@ -12,6 +12,17 @@
 	<!-- <context-param> <param-name>resteasy.resources</param-name> <param-value>src.com.rest.JSONService</param-value> 
 		</context-param> -->
 
+	<context-param>
+	    <param-name>contextConfigLocation</param-name>
+	    <param-value>/WEB-INF/JobSchedular.xml</param-value>
+	</context-param>
+	
+	<listener>
+	   <listener-class>
+	        org.springframework.web.context.ContextLoaderListener
+	   </listener-class>
+	</listener> 
+	
 	<listener>
 		<listener-class>
 			org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrap
