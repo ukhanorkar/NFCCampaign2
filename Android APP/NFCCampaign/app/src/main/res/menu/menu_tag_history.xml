@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="nfc.bits.com.nfccampaign.NFCReader">
-    <item android:id="@+id/action_tag_history" android:title="@string/action_tag_history"
+    tools:context="nfc.bits.com.nfccampaign.TagHistory">
+    <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never" />
 </menu>

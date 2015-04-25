@@ -13,6 +13,12 @@
         android:protectionLevel="signature" />
 
     <uses-permission android:name="nfc.bits.com.nfccampaign.permission.C2D_MESSAGE" />
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="true" />
 
     <application
         android:allowBackup="true"
@@ -44,6 +50,17 @@
         <activity
             android:name=".NFCReader"
             android:label="@string/title_activity_nfcreader" >
+            <intent-filter>
+                <action android:name="android.nfc.action.TAG_DISCOVERED" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".TagHistory"
+            android:label="@string/title_activity_tag_history" >
         </activity>
     </application>
 

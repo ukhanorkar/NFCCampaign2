@@ -1,6 +1,7 @@
 package nfc.bits.com.nfccampaign;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -24,26 +25,21 @@ import com.google.gson.Gson;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import nfc.bits.com.model.User;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    public static final String EXTRA_MESSAGE = "message";
     public static final String PROPERTY_REG_ID = "registration_id";
     private static final String PROPERTY_APP_VERSION = "appVersion";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
@@ -60,13 +56,12 @@ public class MainActivity extends ActionBarActivity {
     static final String TAG = "GCM";
 
     GoogleCloudMessaging gcm;
-    AtomicInteger msgId = new AtomicInteger();
-    private final String NFC_PREF = "NFCPreferences";
     Context context;
     String regid;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        String NFC_PREF = "NFCPreferences";
         SharedPreferences sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
         String userName = sharedPreferences.getString("UserName", "notSet");
         if (userName.equalsIgnoreCase("notSet")){
@@ -78,15 +73,44 @@ public class MainActivity extends ActionBarActivity {
                 public void onClick(View v) {
                     final EditText email = (EditText) findViewById(R.id.email);
                     final EditText phone = (EditText) findViewById(R.id.contactNumber);
-                    if(email.getText().toString()!= "" && phone.getText().toString() != ""){
+                    if(!email.getText().toString().equals("") && !phone.getText().toString().equals("")){
                         User user =  new User();
                         user.setContactNumber(Long.valueOf(phone.getText().toString()));
                         user.setEmail(email.getText().toString());
                         TelephonyManager telephonyManager = (TelephonyManager)getSystemService(Context.TELEPHONY_SERVICE);
                         String deviceId = telephonyManager.getDeviceId();
                         user.setDeviceId(deviceId);
-                        String registrationNumber = getGCMRegistrationNumber();
-                        new RegisterUser().execute();
+                        SharedPreferences gcmPreferences = getGCMPreferences(context);
+                        String gcmRegId = gcmPreferences.getString(PROPERTY_REG_ID, "");
+                        if (gcmRegId.equals("")){
+                            gcmRegId = getGCMRegistrationNumber();
+                        }
+                        user.setRegistrationNumber(gcmRegId);
+                        //new RegisterUser().execute();
+
+                        HttpClient httpClient = new DefaultHttpClient();
+                        //HttpContext localContext = new BasicHttpContext();
+                        Gson gson = new Gson();
+                        String jsonObject = gson.toJson(user);
+                        StringEntity se = null;
+                        try {
+                            se = new StringEntity(jsonObject);
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                        HttpPost httpPost = new HttpPost("http://10.0.0.2:8082/NFCCampaigning/userdaoservice/registerUser");
+                        httpPost.setEntity(se);
+                        httpPost.setHeader("Accept", "application/json");
+                        httpPost.setHeader("Content-type", "application/json");
+                        String text;
+                        try {
+                            HttpResponse response = httpClient.execute(httpPost);
+                            HttpEntity entity = response.getEntity();
+                           // text = getASCIIContentFromEntity(entity);
+                        } catch (Exception e) {
+                           Log.e("Failed", e.getMessage());
+                        }
+
                     }else {
                         Toast.makeText(getApplicationContext(), "Please Enter Email/Contact Number", Toast.LENGTH_SHORT).show();
                     }
@@ -95,7 +119,9 @@ public class MainActivity extends ActionBarActivity {
 
         }
         else{
-           setContentView(R.layout.activity_nfcreader);
+            Intent nfcIntent = new Intent(MainActivity.this, NFCReader.class);
+            // nfcIntent.putExtra("key", value); //Optional parameters
+            startActivity(nfcIntent);
         }
     }
 
@@ -212,13 +238,11 @@ public class MainActivity extends ActionBarActivity {
         new AsyncTask<Void, Void, String>() {
             @Override
             protected String doInBackground(Void... params) {
-                String msg = "";
                 try {
                     if (gcm == null) {
                         gcm = GoogleCloudMessaging.getInstance(context);
                     }
                     regid = gcm.register(SENDER_ID);
-                    msg = "Device registered, registration ID=" + regid;
 
                     // You should send the registration ID to your server over HTTP, so it
                     // can use GCM/HTTP or CCS to send messages to your app.
@@ -231,7 +255,6 @@ public class MainActivity extends ActionBarActivity {
                     // Persist the regID - no need to register again.
                     storeRegistrationId(context, regid);
                 } catch (IOException ex) {
-                    msg = "Error :" + ex.getMessage();
                     // If there is an error, don't just keep trying to register.
                     // Require the user to click a button again, or perform
                     // exponential back-off.
@@ -248,11 +271,11 @@ public class MainActivity extends ActionBarActivity {
     }
 
 
-    private boolean isUserRegistered(User user) {
+ /*   private boolean isUserRegistered(User user) {
 
         return false;
 
-    }
+    }*/
 
     // You need to do the Play Services APK check here too.
     @Override
@@ -303,7 +326,7 @@ public class MainActivity extends ActionBarActivity {
         @Override
         protected String doInBackground(User... params) {
             HttpClient httpClient = new DefaultHttpClient();
-            HttpContext localContext = new BasicHttpContext();
+            //HttpContext localContext = new BasicHttpContext();
             Gson gson = new Gson();
             String jsonObject = gson.toJson(params);
             StringEntity se = null;
@@ -312,11 +335,11 @@ public class MainActivity extends ActionBarActivity {
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
-            HttpPost httpPost = new HttpPost("http://localHost:8080/userdaoservice/registerUser");
+            HttpPost httpPost = new HttpPost("http://172.16.18.19:8080/userdaoservice/registerUser");
             httpPost.setEntity(se);
             httpPost.setHeader("Accept", "application/json");
             httpPost.setHeader("Content-type", "application/json");
-            String text = null;
+            String text;
             try {
                 HttpResponse response = httpClient.execute(httpPost);
                 HttpEntity entity = response.getEntity();
