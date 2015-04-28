@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.StrictMode;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
@@ -28,7 +29,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
 
 import java.io.IOException;
@@ -67,6 +70,10 @@ public class MainActivity extends ActionBarActivity {
         if (userName.equalsIgnoreCase("notSet")){
             //boolean isRegistered = isUserRegistered(user);
             setContentView(R.layout.activity_main);
+            if (android.os.Build.VERSION.SDK_INT > 9) {
+                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+                StrictMode.setThreadPolicy(policy);
+            }
             final Button button = (Button) findViewById(R.id.registerButton);
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -88,17 +95,19 @@ public class MainActivity extends ActionBarActivity {
                         user.setRegistrationNumber(gcmRegId);
                         //new RegisterUser().execute();
 
-                        HttpClient httpClient = new DefaultHttpClient();
+                        DefaultHttpClient httpClient = new DefaultHttpClient();
                         //HttpContext localContext = new BasicHttpContext();
                         Gson gson = new Gson();
                         String jsonObject = gson.toJson(user);
                         StringEntity se = null;
                         try {
                             se = new StringEntity(jsonObject);
+                            se.setContentType("application/json;charset=UTF-8");
+                            se.setContentEncoding(new BasicHeader(HTTP.CONTENT_TYPE,"application/json;charset=UTF-8"));
                         } catch (UnsupportedEncodingException e) {
                             e.printStackTrace();
                         }
-                        HttpPost httpPost = new HttpPost("http://10.0.0.2:8082/NFCCampaigning/userdaoservice/registerUser");
+                        HttpPost httpPost = new HttpPost("http://env-2178813.ind-cloud.everdata.com/nfc/userdaoservice/registerUser");
                         httpPost.setEntity(se);
                         httpPost.setHeader("Accept", "application/json");
                         httpPost.setHeader("Content-type", "application/json");
@@ -106,9 +115,14 @@ public class MainActivity extends ActionBarActivity {
                         try {
                             HttpResponse response = httpClient.execute(httpPost);
                             HttpEntity entity = response.getEntity();
-                           // text = getASCIIContentFromEntity(entity);
+                            if (response!=null) {
+                                Toast.makeText(getApplicationContext(), "Registration Successful!!", Toast.LENGTH_SHORT).show();
+                                Intent nfcIntent = new Intent(MainActivity.this, NFCReader.class);
+                                startActivity(nfcIntent);
+                            }
                         } catch (Exception e) {
-                           Log.e("Failed", e.getMessage());
+                           Toast.makeText(getApplicationContext(), "Registration Failed", Toast.LENGTH_SHORT).show();
+                           Log.e("Failed", "Failed***************");
                         }
 
                     }else {
@@ -120,7 +134,7 @@ public class MainActivity extends ActionBarActivity {
         }
         else{
             Intent nfcIntent = new Intent(MainActivity.this, NFCReader.class);
-            // nfcIntent.putExtra("key", value); //Optional parameters
+            nfcIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(nfcIntent);
         }
     }
@@ -265,7 +279,6 @@ public class MainActivity extends ActionBarActivity {
             @Override
             protected void onPostExecute(String msg) {
 
-                //mDisplay.append(msg + "\n");
             }
         }.execute(null, null, null);
     }

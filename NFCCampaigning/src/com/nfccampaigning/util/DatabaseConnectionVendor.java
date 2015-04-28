@@ -13,9 +13,9 @@ import java.sql.SQLException;
 
 public class DatabaseConnectionVendor {
 	private static final String DRIVER = "com.mysql.jdbc.Driver";
-	private static final String URL = "jdbc:mysql://localhost/nfccampaigndb";
+	private static final String URL = "jdbc:mysql://mariadb7656-env-2178813.ind-cloud.everdata.com/nfccampaigndb";//jdbc:mysql://localhost/nfccampaigndb
 	private static final String USER = "root";
-	private static final String PASSWORD = "root";
+	private static final String PASSWORD = "PAb3Tv8GyG";
 	private static Connection connection;
 
 	static {
