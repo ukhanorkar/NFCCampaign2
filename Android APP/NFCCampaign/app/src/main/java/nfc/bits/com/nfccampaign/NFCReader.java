@@ -12,6 +12,7 @@ import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
+import android.os.StrictMode;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -20,6 +21,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -45,11 +47,17 @@ public class NFCReader extends ActionBarActivity {
 
     private NfcAdapter mNfcAdapter;
     public static final String MIME_TEXT_PLAIN = "text/plain";
+
+   public String NFC_PREF = "NFCPreferences";
+    private static final String USER_ID = "UserId";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nfcreader);
-
+        if (android.os.Build.VERSION.SDK_INT > 9) {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+        }
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
 
         if (mNfcAdapter == null) {
@@ -151,8 +159,29 @@ public class NFCReader extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_tag_history) {
-            GetVendorHistory getVendorHistory = new GetVendorHistory();
-            getVendorHistory.execute();
+            SharedPreferences sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
+            String userId = sharedPreferences.getString(USER_ID, "notSet");
+            DefaultHttpClient httpClient = new DefaultHttpClient();
+            HttpPost httpPost = new HttpPost("http://env-2178813.ind-cloud.everdata.com/nfc/vendorservice/getUserVendorHistory/" + userId);
+            try {
+                HttpResponse response = httpClient.execute(httpPost);
+                HttpEntity entity = response.getEntity();
+                if (response.getStatusLine().getStatusCode()==200) {
+                    String resp_body = EntityUtils.toString(response.getEntity());
+                    Log.v("resp_body", resp_body.toString());
+                    Gson gson = new Gson();
+                    List<Vendor> vendorList = gson.fromJson(resp_body, new TypeToken<ArrayList<Vendor>>() {
+                    }.getType());
+                    Intent historyIntent = new Intent(NFCReader.this, TagHistory.class);
+                    Bundle bundle = new Bundle();
+                    bundle.putSerializable("vendor_list", (java.io.Serializable) vendorList);
+                    historyIntent.putExtras(bundle);
+                    startActivity(historyIntent);
+                }
+            } catch (Exception e) {
+                Toast.makeText(getApplicationContext(), "Registration Failed", Toast.LENGTH_SHORT).show();
+                Log.e("Failed", "Failed***************");
+            }
             return true;
         }
 

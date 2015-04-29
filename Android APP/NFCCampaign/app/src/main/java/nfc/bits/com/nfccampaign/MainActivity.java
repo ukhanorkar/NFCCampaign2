@@ -33,6 +33,8 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +47,9 @@ public class MainActivity extends ActionBarActivity {
 
     public static final String PROPERTY_REG_ID = "registration_id";
     private static final String PROPERTY_APP_VERSION = "appVersion";
+    private static final String USER_ID = "UserId";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
+    public SharedPreferences sharedPreferences;
 
     /**
      * Substitute you own sender ID here. This is the project number you got
@@ -65,8 +69,8 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String NFC_PREF = "NFCPreferences";
-        SharedPreferences sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
-        String userName = sharedPreferences.getString("UserName", "notSet");
+        sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
+        String userName = sharedPreferences.getString(USER_ID, "notSet");
         if (userName.equalsIgnoreCase("notSet")){
             //boolean isRegistered = isUserRegistered(user);
             setContentView(R.layout.activity_main);
@@ -90,10 +94,9 @@ public class MainActivity extends ActionBarActivity {
                         SharedPreferences gcmPreferences = getGCMPreferences(context);
                         String gcmRegId = gcmPreferences.getString(PROPERTY_REG_ID, "");
                         if (gcmRegId.equals("")){
-                            gcmRegId = getGCMRegistrationNumber();
+                            getGCMRegistrationNumber();
                         }
-                        user.setRegistrationNumber(gcmRegId);
-                        //new RegisterUser().execute();
+                        user.setRegistrationNumber(gcmPreferences.getString(PROPERTY_REG_ID, ""));
 
                         DefaultHttpClient httpClient = new DefaultHttpClient();
                         //HttpContext localContext = new BasicHttpContext();
@@ -115,9 +118,15 @@ public class MainActivity extends ActionBarActivity {
                         try {
                             HttpResponse response = httpClient.execute(httpPost);
                             HttpEntity entity = response.getEntity();
-                            if (response!=null) {
+                            if (response.getStatusLine().getStatusCode()==200) {
                                 Toast.makeText(getApplicationContext(), "Registration Successful!!", Toast.LENGTH_SHORT).show();
+                                String resp_body = EntityUtils.toString(response.getEntity());
+                                Log.v("resp_body", resp_body.toString());
+                               // JSONObject jsobj = new JSONObject(resp_body);
+                               // String responseData = jsonObject.toString();
+                                sharedPreferences.edit().putString(USER_ID, resp_body).commit();
                                 Intent nfcIntent = new Intent(MainActivity.this, NFCReader.class);
+                                nfcIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 startActivity(nfcIntent);
                             }
                         } catch (Exception e) {
@@ -320,53 +329,4 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-
-
-    private class RegisterUser extends AsyncTask<User, Void, String> {
-
-        protected String getASCIIContentFromEntity(HttpEntity entity) throws IllegalStateException, IOException {
-            InputStream in = entity.getContent();
-            StringBuffer out = new StringBuffer();
-            int n = 1;
-            while (n>0) {
-                byte[] b = new byte[4096];
-                n =  in.read(b);
-                if (n>0) out.append(new String(b, 0, n));
-            }
-            return out.toString();
-        }
-
-        @Override
-        protected String doInBackground(User... params) {
-            HttpClient httpClient = new DefaultHttpClient();
-            //HttpContext localContext = new BasicHttpContext();
-            Gson gson = new Gson();
-            String jsonObject = gson.toJson(params);
-            StringEntity se = null;
-            try {
-               se = new StringEntity(jsonObject);
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-            HttpPost httpPost = new HttpPost("http://172.16.18.19:8080/userdaoservice/registerUser");
-            httpPost.setEntity(se);
-            httpPost.setHeader("Accept", "application/json");
-            httpPost.setHeader("Content-type", "application/json");
-            String text;
-            try {
-                HttpResponse response = httpClient.execute(httpPost);
-                HttpEntity entity = response.getEntity();
-                text = getASCIIContentFromEntity(entity);
-            } catch (Exception e) {
-                return e.getLocalizedMessage();
-            }
-            return text;
-        }
-
-        protected void onPostExecute(String results) {
-            if (results!=null) {
-                Toast.makeText(getApplicationContext(), "Registration Successful!!", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
 }
