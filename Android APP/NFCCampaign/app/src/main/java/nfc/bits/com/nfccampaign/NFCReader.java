@@ -72,7 +72,7 @@ public class NFCReader extends ActionBarActivity {
             Toast.makeText(this, "NFC is Disabled!!", Toast.LENGTH_LONG).show();
         }
 
-       // handleIntent(getIntent());
+       handleIntent(getIntent());
     }
 
 
@@ -162,9 +162,9 @@ public class NFCReader extends ActionBarActivity {
             SharedPreferences sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
             String userId = sharedPreferences.getString(USER_ID, "notSet");
             DefaultHttpClient httpClient = new DefaultHttpClient();
-            HttpPost httpPost = new HttpPost("http://env-2178813.ind-cloud.everdata.com/nfc/vendorservice/getUserVendorHistory/" + userId);
+            HttpGet httpGet = new HttpGet("http://env-2178813.ind-cloud.everdata.com/nfc/vendorservice/getUserVendorHistory/" + userId);
             try {
-                HttpResponse response = httpClient.execute(httpPost);
+                HttpResponse response = httpClient.execute(httpGet);
                 HttpEntity entity = response.getEntity();
                 if (response.getStatusLine().getStatusCode()==200) {
                     String resp_body = EntityUtils.toString(response.getEntity());
@@ -172,11 +172,15 @@ public class NFCReader extends ActionBarActivity {
                     Gson gson = new Gson();
                     List<Vendor> vendorList = gson.fromJson(resp_body, new TypeToken<ArrayList<Vendor>>() {
                     }.getType());
+
                     Intent historyIntent = new Intent(NFCReader.this, TagHistory.class);
                     Bundle bundle = new Bundle();
                     bundle.putSerializable("vendor_list", (java.io.Serializable) vendorList);
                     historyIntent.putExtras(bundle);
                     startActivity(historyIntent);
+                }
+                else{
+                    Toast.makeText(this,response.getStatusLine().getStatusCode(), Toast.LENGTH_SHORT ).show();
                 }
             } catch (Exception e) {
                 Toast.makeText(getApplicationContext(), "Registration Failed", Toast.LENGTH_SHORT).show();
@@ -269,58 +273,9 @@ public class NFCReader extends ActionBarActivity {
         @Override
         protected void onPostExecute(String result) {
             if (result != null) {
-                Log.i("Tag", result);
+                Log.i("Tag********************", result);
             }
         }
     }
 
-    private class GetVendorHistory extends AsyncTask<User, Void, String> {
-
-        protected String getASCIIContentFromEntity(HttpEntity entity) throws IllegalStateException, IOException {
-            InputStream in = entity.getContent();
-            StringBuffer out = new StringBuffer();
-            int n = 1;
-            while (n>0) {
-                byte[] b = new byte[4096];
-                n =  in.read(b);
-                if (n>0) out.append(new String(b, 0, n));
-            }
-            return out.toString();
-        }
-
-        @Override
-        protected String doInBackground(User... params) {
-            HttpClient httpClient = new DefaultHttpClient();
-            //HttpContext localContext = new BasicHttpContext();
-            Gson gson = new Gson();
-            String jsonObject = gson.toJson(params);
-            StringEntity se = null;
-            try {
-                se = new StringEntity(jsonObject);
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-            String NFC_PREF = "NFCPreferences";
-            SharedPreferences sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
-            String userId = sharedPreferences.getString("UserName", "notSet");
-            String URL = "http://localHost:8080/vendorservice/getUserVendorHistory/" + userId;
-            HttpGet httpGet = new HttpGet();
-            String jsonResponse;
-            try {
-                HttpResponse response = httpClient.execute(httpGet);
-                HttpEntity entity = response.getEntity();
-                jsonResponse = EntityUtils.toString(response.getEntity());
-            } catch (Exception e) {
-                return e.getLocalizedMessage();
-            }
-            return jsonResponse;
-        }
-
-        protected void onPostExecute(String results) {
-            if (results!=null) {
-                Gson gson = new Gson();
-                List<Vendor> vendors = gson.fromJson(results, ArrayList.class);
-            }
-        }
-    }
 }

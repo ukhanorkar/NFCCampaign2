@@ -12,6 +12,6 @@
     <bean id="cronClass" class="com.nfccampaigning.ws.gcm.GCMNotification" />
  
     <task:scheduled-tasks>
-        <task:scheduled ref="cronClass" method="sendNotification" cron="*/3 * * * * ?"></task:scheduled>
+        <task:scheduled ref="cronClass" method="sendNotification" cron="0 0 12 * * ?"></task:scheduled>
     </task:scheduled-tasks>
 </beans>

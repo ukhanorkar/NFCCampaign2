@@ -4,6 +4,11 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
+
+import java.util.List;
+
+import nfc.bits.com.model.Vendor;
 
 
 public class TagHistory extends ActionBarActivity {
@@ -12,6 +17,15 @@ public class TagHistory extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tag_history);
+        Bundle extras = getIntent().getExtras();
+        List<Vendor> vendorList = null;
+        if (extras != null) {
+          vendorList  = (List<Vendor>) extras.getSerializable("vendor_list");
+        }
+        if (vendorList.size()==0){
+            Toast.makeText(this, "No vendor registered!!!", Toast.LENGTH_LONG).show();
+        }
+        System.out.println(vendorList);
     }
 
 
