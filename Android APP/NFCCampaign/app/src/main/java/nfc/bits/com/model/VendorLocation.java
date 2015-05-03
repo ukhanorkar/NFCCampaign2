@@ -1,10 +1,12 @@
 package nfc.bits.com.model;
 
+import java.io.Serializable;
+
 /**
  * @author unnati_khanorkar
  *
  */
-public class VendorLocation {
+public class VendorLocation implements Serializable{
 
 	private long vendorLocationId;
 	private String street;

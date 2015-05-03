@@ -126,7 +126,7 @@ public class MainActivity extends ActionBarActivity {
                                // String responseData = jsonObject.toString();
                                 sharedPreferences.edit().putString(USER_ID, resp_body).commit();
                                 Intent nfcIntent = new Intent(MainActivity.this, NFCReader.class);
-                                nfcIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                //nfcIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 startActivity(nfcIntent);
                             }
                         } catch (Exception e) {
@@ -143,7 +143,7 @@ public class MainActivity extends ActionBarActivity {
         }
         else{
             Intent nfcIntent = new Intent(MainActivity.this, NFCReader.class);
-            nfcIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+           // nfcIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(nfcIntent);
         }
     }
@@ -155,7 +155,14 @@ public class MainActivity extends ActionBarActivity {
             regid = getRegistrationId(context);
 
             if (regid.isEmpty()) {
-                registerInBackground();
+                if (gcm == null) {
+                    gcm = GoogleCloudMessaging.getInstance(context);
+                }
+                try {
+                    regid = gcm.register(SENDER_ID);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         } else {
             Log.i(TAG, "No valid Google Play Services APK found.");

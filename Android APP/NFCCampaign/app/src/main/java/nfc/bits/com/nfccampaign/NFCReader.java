@@ -47,13 +47,16 @@ public class NFCReader extends ActionBarActivity {
 
     private NfcAdapter mNfcAdapter;
     public static final String MIME_TEXT_PLAIN = "text/plain";
-
-   public String NFC_PREF = "NFCPreferences";
+    public String NFC_PREF = "NFCPreferences";
+    String userId;
     private static final String USER_ID = "UserId";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nfcreader);
+
+        SharedPreferences sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
+        userId = sharedPreferences.getString(USER_ID, "notSet");
         if (android.os.Build.VERSION.SDK_INT > 9) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
@@ -63,7 +66,6 @@ public class NFCReader extends ActionBarActivity {
         if (mNfcAdapter == null) {
             // NFC is not supported
             Toast.makeText(this, "This device doesn't support NFC.", Toast.LENGTH_LONG).show();
-            finish();
             return;
 
         }
@@ -159,8 +161,6 @@ public class NFCReader extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_tag_history) {
-            SharedPreferences sharedPreferences = getSharedPreferences(NFC_PREF, Context.MODE_PRIVATE);
-            String userId = sharedPreferences.getString(USER_ID, "notSet");
             DefaultHttpClient httpClient = new DefaultHttpClient();
             HttpGet httpGet = new HttpGet("http://env-2178813.ind-cloud.everdata.com/nfc/vendorservice/getUserVendorHistory/" + userId);
             try {
@@ -183,7 +183,7 @@ public class NFCReader extends ActionBarActivity {
                     Toast.makeText(this,response.getStatusLine().getStatusCode(), Toast.LENGTH_SHORT ).show();
                 }
             } catch (Exception e) {
-                Toast.makeText(getApplicationContext(), "Registration Failed", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "Unable to show the Tag History.", Toast.LENGTH_SHORT).show();
                 Log.e("Failed", "Failed***************");
             }
             return true;
@@ -194,13 +194,33 @@ public class NFCReader extends ActionBarActivity {
 
     private void handleIntent(Intent intent) {
         String action = intent.getAction();
+        String vendorId;
         if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)) {
 
             String type = intent.getType();
             if (MIME_TEXT_PLAIN.equals(type)) {
 
                 Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-                new NdefReaderTask().execute(tag);
+                Ndef ndef = Ndef.get(tag);
+                if (ndef == null) {
+                    // NDEF is not supported by this Tag.
+                    //return null;
+                    Log.e("TAG", "NDEF is not supported by this Tag.");
+                }
+
+                NdefMessage ndefMessage = ndef.getCachedNdefMessage();
+
+                NdefRecord[] records = ndefMessage.getRecords();
+                for (NdefRecord ndefRecord : records) {
+                    if (ndefRecord.getTnf() == NdefRecord.TNF_WELL_KNOWN && Arrays.equals(ndefRecord.getType(), NdefRecord.RTD_TEXT))
+                        try {
+                            vendorId = readText(ndefRecord);
+                            subscribeVendor(vendorId);
+                            Log.e("TAG", vendorId);
+                        } catch (UnsupportedEncodingException e) {
+                            Log.e("TAG", "Unsupported Encoding", e);
+                        }
+                }
 
             } else {
                 Log.d("TAG", "Wrong mime type: " + type);
@@ -214,68 +234,48 @@ public class NFCReader extends ActionBarActivity {
 
             for (String tech : techList) {
                 if (searchedTech.equals(tech)) {
-                    new NdefReaderTask().execute(tag);
                     break;
                 }
             }
         }
     }
 
-    /**
-     * Background task for reading the data. Do not block the UI thread while reading.
-     *
-     * @author Ralf Wondratschek
-     *
-     */
-    private class NdefReaderTask extends AsyncTask<Tag, Void, String> {
+    private void subscribeVendor(String vendorId) {
 
-        @Override
-        protected String doInBackground(Tag... params) {
-            Tag tag = params[0];
-
-            Ndef ndef = Ndef.get(tag);
-            if (ndef == null) {
-                // NDEF is not supported by this Tag.
-                return null;
+        DefaultHttpClient httpClient = new DefaultHttpClient();
+        HttpPost httpPost = new HttpPost("http://env-2178813.ind-cloud.everdata.com/nfc/vendorservice/saveUserVendorHistory/" + userId + "/"+ vendorId);
+        try {
+            HttpResponse response = httpClient.execute(httpPost);
+            HttpEntity entity = response.getEntity();
+            if (response.getStatusLine().getStatusCode()==204) {
+                Toast.makeText(this,"Congratulations! You have subscribed successfully!", Toast.LENGTH_SHORT ).show();
             }
-
-            NdefMessage ndefMessage = ndef.getCachedNdefMessage();
-
-            NdefRecord[] records = ndefMessage.getRecords();
-            for (NdefRecord ndefRecord : records) {
-                if (ndefRecord.getTnf() == NdefRecord.TNF_WELL_KNOWN && Arrays.equals(ndefRecord.getType(), NdefRecord.RTD_TEXT))
-                    try {
-                        return readText(ndefRecord);
-                    } catch (UnsupportedEncodingException e) {
-                        Log.e("TAG", "Unsupported Encoding", e);
-                    }
+            else{
+                Toast.makeText(this,response.getStatusLine().getStatusCode()+"Error while subscribing for this vendor", Toast.LENGTH_SHORT ).show();
             }
-
-            return null;
-        }
-
-        private String readText(NdefRecord record) throws UnsupportedEncodingException {
-            byte[] payload = record.getPayload();
-
-            // Get the Text Encoding
-            String textEncoding = ((payload[0] & 128) == 0) ? "UTF-8" : "UTF-16";
-
-            // Get the Language Code
-            int languageCodeLength = payload[0] & 0063;
-
-            // String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
-            // e.g. "en"
-
-            // Get the Text
-            return new String(payload, languageCodeLength + 1, payload.length - languageCodeLength - 1, textEncoding);
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            if (result != null) {
-                Log.i("Tag********************", result);
-            }
+        } catch (Exception e) {
+            Toast.makeText(getApplicationContext(), "Network Error while subscribing for this vendor", Toast.LENGTH_SHORT).show();
+            Log.e("Failed", "Failed***************");
         }
     }
+
+
+    private String readText(NdefRecord record) throws UnsupportedEncodingException {
+        byte[] payload = record.getPayload();
+
+        // Get the Text Encoding
+        String textEncoding = ((payload[0] & 128) == 0) ? "UTF-8" : "UTF-16";
+
+        // Get the Language Code
+        int languageCodeLength = payload[0] & 0063;
+
+        // String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
+        // e.g. "en"
+
+        // Get the Text
+        return new String(payload, languageCodeLength + 1, payload.length - languageCodeLength - 1, textEncoding);
+    }
+
+
 
 }

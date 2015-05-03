@@ -1,12 +1,13 @@
 package nfc.bits.com.model;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * @author unnati_khanorkar
  *
  */
-public class Vendor {
+public class Vendor implements Serializable{
 
 	private long vendorId;
 	private String vendorName;
@@ -74,4 +75,8 @@ public class Vendor {
 		this.vendorLocations = vendorLocations;
 	}
 
+    @Override
+    public String toString() {
+        return this.vendorName + "\n " + this.contactNumber + "\n " + this.email;
+    }
 }

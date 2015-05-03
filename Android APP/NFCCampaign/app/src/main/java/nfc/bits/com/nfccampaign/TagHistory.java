@@ -4,6 +4,11 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
@@ -17,6 +22,7 @@ public class TagHistory extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tag_history);
+        ListView listView = (ListView) findViewById(R.id.listView);
         Bundle extras = getIntent().getExtras();
         List<Vendor> vendorList = null;
         if (extras != null) {
@@ -24,7 +30,23 @@ public class TagHistory extends ActionBarActivity {
         }
         if (vendorList.size()==0){
             Toast.makeText(this, "No vendor registered!!!", Toast.LENGTH_LONG).show();
+        }else {
+            ArrayAdapter<Vendor> adapter = new ArrayAdapter<Vendor>(this,
+                    android.R.layout.simple_list_item_1, vendorList);
+            listView.setAdapter(adapter);
+            listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position,
+                                        long id) {
+
+                    String item = ((TextView)view).getText().toString();
+
+                    Toast.makeText(getBaseContext(), item, Toast.LENGTH_LONG).show();
+
+                }
+            });
         }
+
         System.out.println(vendorList);
     }
 

@@ -38,14 +38,17 @@ public class UserDAOService {
 	public String registerUser(User user){
 		long userId = 0;
 		try {
-			connection = DatabaseConnectionVendor.getConnection();
-			preparedStatement = connection.prepareStatement(INSERT_USER_INFO);
-			preparedStatement.setString(1, user.getDeviceId());
-			preparedStatement.setLong(2, user.getContactNumber());
-			preparedStatement.setString(3,  user.getEmail());
-			preparedStatement.setString(4,  user.getRegistrationNumber());
-			preparedStatement.executeUpdate();	
 			userId = getUser(user.getDeviceId());
+			if(userId == 0){
+				connection = DatabaseConnectionVendor.getConnection();
+				preparedStatement = connection.prepareStatement(INSERT_USER_INFO);
+				preparedStatement.setString(1, user.getDeviceId());
+				preparedStatement.setLong(2, user.getContactNumber());
+				preparedStatement.setString(3,  user.getEmail());
+				preparedStatement.setString(4,  user.getRegistrationNumber());
+				preparedStatement.executeUpdate();
+				userId = getUser(user.getDeviceId());
+			}
 		} catch (SQLException e) {
 			logger.info(e.getMessage());
 			e.printStackTrace();
@@ -88,6 +91,7 @@ public class UserDAOService {
 		} catch (SQLException e) {
 			logger.info(e.getMessage());
 			e.printStackTrace();
+			return userId;
 		}
 		return userId;
 	}
