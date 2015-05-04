@@ -6,4 +6,5 @@
     <string name="action_tag_history">Tag History</string>
     <string name="title_activity_nfcreader">NFCReader</string>
     <string name="title_activity_tag_history">TagHistory</string>
+    <string name="title_activity_vendor_location_details">VendorLocationDetails</string>
 </resources>

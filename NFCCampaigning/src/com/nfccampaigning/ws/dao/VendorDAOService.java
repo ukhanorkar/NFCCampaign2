@@ -32,7 +32,7 @@ public class VendorDAOService {
 	private ResultSet resultSet;
 	private Connection connection;
 	private final String SAVE_USER_VENDOR_HISTORY_QUERY = "INSERT INTO user_vendor_history (user_id,vendor_location_id,isSubscribed) VALUES(?,?,1)";
-	private final String GET_USER_VENDOR_HISTORY_QUERY = "select v.name, vl.* " +
+	private final String GET_USER_VENDOR_HISTORY_QUERY = "select v.name, v.contact_number, v.email_id, vl.* " +
 			"from vendor v, vendor_location vl, user_vendor_history uvh " +
 			"where uvh.user_id = ? " +
 			"and uvh.vendor_location_id = vl.vendor_location_id " +
@@ -84,6 +84,8 @@ public class VendorDAOService {
 			Vendor vendor = new Vendor();
 			vendor.setVendorName(resultSet.getString("name"));
 			vendor.setVendorId(resultSet.getLong("vendor_id"));
+			vendor.setContactNumber(resultSet.getLong("contact_number"));
+			vendor.setEmail(resultSet.getString("email_id"));
 			VendorLocation vendorLocation =  getVendorLocation(resultSet);
 			currentVendorId = vendor.getVendorId();
 			vendorLocations.add(vendorLocation);		
@@ -101,6 +103,8 @@ public class VendorDAOService {
 					vendors.add(vendor);
 					vendor.setVendorName(resultSet.getString("name"));
 					vendor.setVendorId(resultSet.getLong("vendor_id"));
+					vendor.setContactNumber(resultSet.getLong("contact_number"));
+					vendor.setEmail(resultSet.getString("email_id"));
 					vendorLocations = new ArrayList<VendorLocation>();
 					vendor.setVendorLocations(vendorLocations);
 					vendorLocations.add(getVendorLocation(resultSet));

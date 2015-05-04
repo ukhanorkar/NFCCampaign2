@@ -113,6 +113,9 @@ public class VendorLocation implements Serializable{
 	public void setLongitude(double longitude) {
 		this.longitude = longitude;
 	}
-	
-	
+
+    @Override
+    public String toString() {
+        return this.street + " " + this.city + " " + this.state + " " + this.pincode;
+    }
 }
