@@ -1,11 +1,12 @@
 package com.nfccampaigning.ws.gcm;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -42,8 +43,8 @@ public class GCMNotification{
 		try {
 			connection = DatabaseConnectionVendor.getConnection();
 			preparedStatement = connection.prepareStatement(GET_OFFER_DETAILS_QUERY);
-			Date currentDate = new Date();
-			preparedStatement.setDate(1, (java.sql.Date) currentDate);
+			Date currentDate = new Date(Calendar.getInstance().getTime().getTime());
+			preparedStatement.setDate(1, currentDate);
 			ResultSet resultSet = preparedStatement.executeQuery();
 			resultSet.first();
 			User user = new User();
@@ -98,7 +99,7 @@ public class GCMNotification{
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void sendNotification(){
-		HashMap<User,ArrayList<Offer>> offerDetails = getOfferDetails();
+		/*HashMap<User,ArrayList<Offer>> offerDetails = getOfferDetails();
 		Iterator it = offerDetails.entrySet().iterator();
 		while (it.hasNext()) {
 			 Map.Entry data = (Map.Entry)it.next();
@@ -116,7 +117,7 @@ public class GCMNotification{
 					e.printStackTrace();
 				}
 			}			
-		}
-		
+		}*/
+		System.out.println("Test DATA");
 	}
 }
